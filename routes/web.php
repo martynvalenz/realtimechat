@@ -15,6 +15,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::post('getFriends','HomeController@get_friends');
+Route::post('session/create','SessionController@create');
+
 Auth::routes();
 
 Route::get('/home', 'HomeController@index')->name('home');
