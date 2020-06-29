@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Resources\SessionResource;
 use App\Models\Session;
+use App\Events\SessionEvent;
 
 class SessionController extends Controller
 {
@@ -15,6 +16,10 @@ class SessionController extends Controller
             'user2_id' => $request->friend_id
         ]);
 
-        return new SessionResource($session);
+        $modifiedSession = new SessionResource($session);
+
+        broadcast(new SessionEvent($modifiedSession, auth()->id()));
+
+        return $modifiedSession;
     }
 }

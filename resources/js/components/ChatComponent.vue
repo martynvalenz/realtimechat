@@ -5,9 +5,13 @@
                 <div class="card">
                     <div class="card-header">Contacts</div>
                     <ul class="list-group">
-                        <a @click.prevent="openChat(friend)" v-for="friend in friends" :key="friend.id">
-                            <li class="list-group-item">{{friend.name}}</li>
-                        </a>
+                        <li class="list-group-item" @click.prevent="openChat(friend)" v-for="friend in friends" :key="friend.id">
+                            <a href="">
+                                {{friend.name}} 
+                                <i class="fas fa-circle text-success float-right" v-if="friend.online"></i>
+                                <i class="far fa-circle text-secondary float-right" v-if="!friend.online"></i>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -36,6 +40,28 @@
 
         created(){
             this.getFriends()
+
+            Echo.channel('Chat').listen('SessionEvent', e => {
+                let friend = this.friends.find(friend => friend.id == e.session_by)
+                friend.session = e.session
+            })
+
+            Echo.join('Chat')
+            .here((users) => {
+                this.friends.forEach(friend =>{
+                    users.forEach(user => {
+                        if(user.id == friend.id){
+                            friend.online = true
+                        }
+                    })
+                })
+            })
+            .joining((user) => {
+                this.friends.forEach(friend => user.id == friend.id ? friend.online = true : '')
+            })
+            .leaving((user) => {
+                this.friends.forEach(friend => user.id == friend.id ? friend.online = false : '')
+            });
         },
 
         methods:{
@@ -49,7 +75,7 @@
             openChat(friend){
                 if(friend.session){
                     this.friends.forEach(friend => {
-                        friend.session.open = false
+                        friend => (friend.session ? (friend.session.open = false) : '')
                     })
                     friend.session.open = true
                 }
@@ -62,9 +88,11 @@
                 axios.post('/session/create',{friend_id:friend.id})
                 .then(res => {
                     friend.session = res.data.data
-                    /* this.friends.forEach(friend => {
-                        friend.session.open = false
-                    }) */
+                    this.friends.forEach(friend => {
+                        if(friend.session){
+                            friend.session.open = false
+                        }
+                    })
                     friend.session.open = true
                 })
             },
