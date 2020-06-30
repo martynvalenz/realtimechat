@@ -1937,6 +1937,7 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
   data: function data() {
@@ -1957,6 +1958,8 @@ __webpack_require__.r(__webpack_exports__);
       });
 
       friend.session = e.session;
+
+      _this.listenForEverySession(friend);
     });
     Echo.join('Chat').here(function (users) {
       _this.friends.forEach(function (friend) {
@@ -1982,6 +1985,10 @@ __webpack_require__.r(__webpack_exports__);
 
       axios.post('/getFriends').then(function (res) {
         _this2.friends = res.data.data;
+
+        _this2.friends.forEach(function (friend) {
+          friend.session ? _this2.listenForEverySession(friend) : '';
+        });
       });
     },
     openChat: function openChat(friend) {
@@ -1992,6 +1999,7 @@ __webpack_require__.r(__webpack_exports__);
           });
         });
         friend.session.open = true;
+        friend.session.unreadCount = 0;
       } else {
         this.createSession(friend);
       }
@@ -2011,6 +2019,11 @@ __webpack_require__.r(__webpack_exports__);
         });
 
         friend.session.open = true;
+      });
+    },
+    listenForEverySession: function listenForEverySession(friend) {
+      Echo["private"]("Chat.".concat(friend.session.id)).listen('PrivateChatEvent', function (e) {
+        friend.session.open ? '' : friend.session.unreadCount++;
       });
     },
     close: function close(friend) {
@@ -2073,38 +2086,57 @@ __webpack_require__.r(__webpack_exports__);
     };
   },
   created: function created() {
+    var _this = this;
+
+    this.read();
     this.getAllMessages();
+    Echo["private"]("Chat.".concat(this.friend.session.id)).listen('PrivateChatEvent', function (e) {
+      _this.read();
+
+      _this.chats.push({
+        content: e.content,
+        type: 1,
+        send_at: 'Just now'
+      });
+    });
   },
   methods: {
+    read: function read() {
+      axios.post("/session/".concat(this.friend.session.id, "/read"));
+    },
     getAllMessages: function getAllMessages() {
-      var _this = this;
+      var _this2 = this;
 
       axios.post("/session/".concat(this.friend.session.id, "/chats")).then(function (res) {
-        _this.chats = res.data.data;
+        _this2.chats = res.data.data;
       });
     },
     send: function send() {
-      var _this2 = this;
+      var _this3 = this;
 
       if (this.message) {
         axios.post("/send/".concat(this.friend.session.id), {
           content: this.message,
           to_user: this.friend.id
         }).then(function (res) {
-          _this2.pushToChat(res.data);
+          var data = {
+            content: res.data.content,
+            id: res.data.id,
+            created_at: res.data.created_at,
+            type: 0
+          };
 
-          _this2.message = '';
+          _this3.pushToChat(data);
+
+          console.log(res.data);
+          _this3.message = '';
         })["catch"](function (error) {
           console.log(error);
         });
       }
     },
-    pushToChat: function pushToChat(message) {
-      this.chats.push({
-        message: message,
-        type: 0,
-        send_at: 'Just now'
-      });
+    pushToChat: function pushToChat(data) {
+      this.chats.push(data);
     },
     close: function close() {
       this.$emit('close');
@@ -44469,6 +44501,17 @@ var render = function() {
                           staticClass:
                             "far fa-circle text-secondary float-right"
                         })
+                      : _vm._e(),
+                    _vm._v(" "),
+                    friend.session && friend.session.unreadCount > 0
+                      ? _c(
+                          "span",
+                          {
+                            staticClass: "text-danger float-right",
+                            staticStyle: { "padding-right": "1em" }
+                          },
+                          [_vm._v(_vm._s(friend.session.unreadCount))]
+                        )
                       : _vm._e()
                   ])
                 ]
@@ -44618,11 +44661,11 @@ var render = function() {
         return _c(
           "p",
           {
-            key: chat.message,
+            key: chat.id,
             staticClass: "card-text",
             class: { "text-right": chat.type == 0 }
           },
-          [_vm._v(_vm._s(chat.message))]
+          [_vm._v(_vm._s(chat.content))]
         )
       }),
       0

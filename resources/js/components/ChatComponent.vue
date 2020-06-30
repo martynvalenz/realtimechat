@@ -10,6 +10,7 @@
                                 {{friend.name}} 
                                 <i class="fas fa-circle text-success float-right" v-if="friend.online"></i>
                                 <i class="far fa-circle text-secondary float-right" v-if="!friend.online"></i>
+                                <span class="text-danger float-right" style="padding-right:1em;" v-if="friend.session && friend.session.unreadCount > 0">{{friend.session.unreadCount}}</span>
                             </a>
                         </li>
                     </ul>
@@ -44,6 +45,7 @@
             Echo.channel('Chat').listen('SessionEvent', e => {
                 let friend = this.friends.find(friend => friend.id == e.session_by)
                 friend.session = e.session
+                this.listenForEverySession(friend)
             })
 
             Echo.join('Chat')
@@ -69,6 +71,9 @@
                 axios.post('/getFriends')
                 .then(res => {
                     this.friends = res.data.data
+                    this.friends.forEach(friend => {
+                        friend.session ? this.listenForEverySession(friend) : ''
+                    })
                 })
             },
 
@@ -78,6 +83,7 @@
                         friend => (friend.session ? (friend.session.open = false) : '')
                     })
                     friend.session.open = true
+                    friend.session.unreadCount = 0
                 }
                 else{
                     this.createSession(friend)
@@ -94,6 +100,13 @@
                         }
                     })
                     friend.session.open = true
+                })
+            },
+
+            listenForEverySession(friend){
+                Echo.private(`Chat.${friend.session.id}`)
+                .listen('PrivateChatEvent', (e) => {
+                    friend.session.open ? '' : friend.session.unreadCount++
                 })
             },
 

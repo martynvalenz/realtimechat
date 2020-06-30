@@ -20,7 +20,7 @@
          </div>
       </div>
       <div class="card-body" v-chat-scroll>
-         <p class="card-text" :class="{'text-right':chat.type == 0}" v-for="chat in chats" :key="chat.message">{{chat.message}}</p>
+         <p class="card-text" :class="{'text-right':chat.type == 0}" v-for="chat in chats" :key="chat.id">{{chat.content}}</p>
       </div>
       <form class="card-footer" @submit.prevent="send()">
          <div class="form-group">
@@ -45,10 +45,21 @@
       },
 
       created(){
+         this.read()
          this.getAllMessages()
+
+         Echo.private(`Chat.${this.friend.session.id}`)
+         .listen('PrivateChatEvent', (e) => {
+            this.read()
+            this.chats.push({content:e.content, type:1, send_at:'Just now'})
+         })
       },
 
       methods:{
+         read(){
+            axios.post(`/session/${this.friend.session.id}/read`)
+         },
+
          getAllMessages(){
             axios.post(`/session/${this.friend.session.id}/chats`)
             .then(res => {
@@ -60,7 +71,9 @@
             if(this.message){
                axios.post(`/send/${this.friend.session.id}`,{content:this.message, to_user:this.friend.id})
                .then(res => {
-                  this.pushToChat(res.data)
+                  let data = {content:res.data.content, id:res.data.id, created_at:res.data.created_at, type:0}
+                  this.pushToChat(data)
+                  console.log(res.data)
                   this.message = ''
                })
                .catch(error => {
@@ -69,8 +82,8 @@
             }
          },
 
-         pushToChat(message){
-            this.chats.push({message:message, type:0, send_at:'Just now'})
+         pushToChat(data){
+            this.chats.push(data)
          },
 
          close(){
