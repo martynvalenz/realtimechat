@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Session;
 use App\Http\Resources\ChatResource;
 use App\Events\PrivateChatEvent;
+use App\Events\MsgReadEvent;
 use Carbon\Carbon;
 
 class ChatController extends Controller
@@ -36,6 +37,7 @@ class ChatController extends Controller
          $chat->update([
             'read_at' => Carbon::now()->toDateTimeString()
          ]);
+         broadcast(new MsgReadEvent(new ChatResource($chat), $chat->session_id));
       }
    }
 }

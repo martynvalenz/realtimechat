@@ -20,7 +20,7 @@
          </div>
       </div>
       <div class="card-body" v-chat-scroll>
-         <p class="card-text" :class="{'text-right':chat.type == 0}" v-for="chat in chats" :key="chat.id">{{chat.content}}</p>
+         <p class="card-text" :class="{'text-right':chat.type == 0, 'text-success':chat.read_at != null}" v-for="chat in chats" :key="chat.id">{{chat.content}}</p>
       </div>
       <form class="card-footer" @submit.prevent="send()">
          <div class="form-group">
@@ -50,8 +50,13 @@
 
          Echo.private(`Chat.${this.friend.session.id}`)
          .listen('PrivateChatEvent', (e) => {
-            this.read()
+            this.friend.session.open ? this.read() : ''
             this.chats.push({content:e.content, type:1, send_at:'Just now'})
+         })
+
+         Echo.private(`Chat.${this.friend.session.id}`)
+         .listen('MsgReadEvent', (e) => {
+            this.chats.forEach(chat => chat.id == e.chat.id ? chat.read_at = e.chat.read_at : '')
          })
       },
 
@@ -73,8 +78,8 @@
                .then(res => {
                   let data = {content:res.data.content, id:res.data.id, created_at:res.data.created_at, type:0}
                   this.pushToChat(data)
-                  console.log(res.data)
                   this.message = ''
+                  // this.chats[this.chats.length - 1].id = res.data
                })
                .catch(error => {
                   console.log(error)

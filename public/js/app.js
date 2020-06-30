@@ -2091,12 +2091,17 @@ __webpack_require__.r(__webpack_exports__);
     this.read();
     this.getAllMessages();
     Echo["private"]("Chat.".concat(this.friend.session.id)).listen('PrivateChatEvent', function (e) {
-      _this.read();
+      _this.friend.session.open ? _this.read() : '';
 
       _this.chats.push({
         content: e.content,
         type: 1,
         send_at: 'Just now'
+      });
+    });
+    Echo["private"]("Chat.".concat(this.friend.session.id)).listen('MsgReadEvent', function (e) {
+      _this.chats.forEach(function (chat) {
+        return chat.id == e.chat.id ? chat.read_at = e.chat.read_at : '';
       });
     });
   },
@@ -2128,8 +2133,7 @@ __webpack_require__.r(__webpack_exports__);
 
           _this3.pushToChat(data);
 
-          console.log(res.data);
-          _this3.message = '';
+          _this3.message = ''; // this.chats[this.chats.length - 1].id = res.data
         })["catch"](function (error) {
           console.log(error);
         });
@@ -44663,7 +44667,10 @@ var render = function() {
           {
             key: chat.id,
             staticClass: "card-text",
-            class: { "text-right": chat.type == 0 }
+            class: {
+              "text-right": chat.type == 0,
+              "text-success": chat.read_at != null
+            }
           },
           [_vm._v(_vm._s(chat.content))]
         )
