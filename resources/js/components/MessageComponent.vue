@@ -20,7 +20,11 @@
          </div>
       </div>
       <div class="card-body" v-chat-scroll>
-         <p class="card-text" :class="{'text-right':chat.type == 0, 'text-success':chat.read_at != null}" v-for="chat in chats" :key="chat.id">{{chat.content}}</p>
+         <p class="card-text" :class="{'text-right':chat.type == 0, 'text-success':chat.read_at != null}" v-for="chat in chats" :key="chat.id">
+            {{chat.content}}
+            <br>
+            <span style="font-size:8px;">{{chat.read_at}}</span>
+         </p>
       </div>
       <form class="card-footer" @submit.prevent="send()">
          <div class="form-group">
@@ -76,7 +80,7 @@
             if(this.message){
                axios.post(`/send/${this.friend.session.id}`,{content:this.message, to_user:this.friend.id})
                .then(res => {
-                  let data = {content:res.data.content, id:res.data.id, created_at:res.data.created_at, type:0}
+                  let data = {content:res.data.content, id:res.data.id, created_at:res.data.created_at, type:0, read_at:null}
                   this.pushToChat(data)
                   this.message = ''
                   // this.chats[this.chats.length - 1].id = res.data
@@ -96,7 +100,10 @@
          },
 
          clear(){
-            this.chats = []
+            axios.post(`session/${this.friend.session.id}/clear`)
+            .then(res => {
+               this.chats = []
+            })
          },
 
          block(){

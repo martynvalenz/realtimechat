@@ -2075,6 +2075,10 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   props: ['friend'],
   data: function data() {
@@ -2128,7 +2132,8 @@ __webpack_require__.r(__webpack_exports__);
             content: res.data.content,
             id: res.data.id,
             created_at: res.data.created_at,
-            type: 0
+            type: 0,
+            read_at: null
           };
 
           _this3.pushToChat(data);
@@ -2146,7 +2151,11 @@ __webpack_require__.r(__webpack_exports__);
       this.$emit('close');
     },
     clear: function clear() {
-      this.chats = [];
+      var _this4 = this;
+
+      axios.post("session/".concat(this.friend.session.id, "/clear")).then(function (res) {
+        _this4.chats = [];
+      });
     },
     block: function block() {
       this.session_block = true;
@@ -44672,7 +44681,14 @@ var render = function() {
               "text-success": chat.read_at != null
             }
           },
-          [_vm._v(_vm._s(chat.content))]
+          [
+            _vm._v("\n         " + _vm._s(chat.content) + "\n         "),
+            _c("br"),
+            _vm._v(" "),
+            _c("span", { staticStyle: { "font-size": "8px" } }, [
+              _vm._v(_vm._s(chat.read_at))
+            ])
+          ]
         )
       }),
       0
